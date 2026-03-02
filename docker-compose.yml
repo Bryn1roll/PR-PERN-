@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  service-a:
+    build:
+      context: ./backend/service-a
+      dockerfile: Dockerfile
+    container_name: pern-labs-service-a
+    ports:
+      - "3000:3000"
+    networks:
+      - pern-labs-net
+
+  service-b:
+    build:
+      context: ./backend/service-b
+      dockerfile: Dockerfile
+    container_name: pern-labs-service-b
+    environment:
+      - SERVICE_A_URL=http://service-a:3000
+    ports:
+      - "4000:4000"
+    depends_on:
+      - service-a
+    networks:
+      - pern-labs-net
+
+networks:
+  pern-labs-net:
+    driver: bridge
+
