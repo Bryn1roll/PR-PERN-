@@ -87,6 +87,33 @@ app.get('/proxy/tasks', async (req, res) => {
   }
 });
 
+// POST /proxy/tasks — создаёт задачу в сервисе A через сервис B
+app.post('/proxy/tasks', async (req, res) => {
+  try {
+    const { title, completed = false } = req.body || {};
+    if (!title) {
+      return res.status(400).json({ error: 'Field "title" is required' });
+    }
+
+    const response = await axios.post(
+      `${SERVICE_A_URL}/tasks`,
+      { title, completed },
+      { headers: { 'Content-Type': 'application/json' } },
+    );
+
+    return res.status(response.status).json({
+      source: 'service-a',
+      created: response.data,
+    });
+  } catch (error) {
+    const status = error.response?.status || 500;
+    return res.status(status).json({
+      error: 'Failed to create task in service A via service B',
+      details: error.message,
+    });
+  }
+});
+
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`PERN-labs service B is running on port ${PORT}`);

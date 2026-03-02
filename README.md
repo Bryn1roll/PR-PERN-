@@ -1,0 +1,209 @@
+## PERN-labs — REST API в Docker
+
+- **Сервис A**: CRUD по ресурсу `tasks` (in-memory), базовая информация о проекте.
+- **Сервис B**: CRUD по ресурсу `notes` (in-memory) и HTTP-взаимодействие с сервисом A через endpoint `/proxy/tasks`.
+
+---
+
+### Требования
+
+- Установлен Docker (и `docker compose` / `docker-compose`).
+
+
+---
+
+### Структура проекта
+
+- `backend/service-a` — сервис A (tasks API)
+  - `src/index.js` — код сервиса.
+  - `Dockerfile` — образ для сервиса A.
+- `backend/service-b` — сервис B (notes API + HTTP-запросы к A)
+  - `src/index.js` — код сервиса.
+  - `Dockerfile` — образ для сервиса B.
+- `docker-compose.yml` — поднимает оба сервиса в одной сети Docker.
+
+---
+
+### Запуск в Docker (рекомендуемый вариант для отчёта)
+
+Из корня проекта:
+
+```bash
+cd "РАСПОЛОЖЕНИЕПРОЕКТА"
+
+docker compose up --build
+
+```
+
+После успешного старта:
+
+- Сервис A доступен на `http://localhost:3000`
+- Сервис B доступен на `http://localhost:4000`
+
+Остановить:
+
+```bash
+docker compose down
+# или docker-compose down
+```
+
+---
+
+### Проверка сервисов с помощью curl
+
+<details>
+<summary><strong>Показать примеры curl-запросов для сервисов A и B</strong></summary>
+
+
+#### Сервис A (tasks API)
+
+Базовая проверка:
+
+```bash
+curl http://localhost:3000/
+curl http://localhost:3000/info
+```
+
+CRUD по задачам:
+
+```bash
+# Получить все задачи
+curl http://localhost:3000/tasks
+
+# Создать новую задачу
+curl -X POST http://localhost:3000/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Сделать отчёт по лабораторной","completed":false}'
+
+# Получить задачу по id (пример: id = 1)
+curl http://localhost:3000/tasks/1
+
+# Обновить задачу
+curl -X PUT http://localhost:3000/tasks/1 \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Обновлённая задача","completed":true}'
+
+# Удалить задачу
+curl -X DELETE http://localhost:3000/tasks/1
+```
+
+#### Сервис B (notes API + взаимодействие с A)
+
+Базовая проверка:
+
+```bash
+curl http://localhost:4000/
+```
+
+CRUD по заметкам:
+
+```bash
+# Получить все заметки
+curl http://localhost:4000/notes
+
+# Создать заметку
+curl -X POST http://localhost:4000/notes \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Заметка для проверки REST","important":true}'
+
+# Получить заметку по id (пример: id = 1)
+curl http://localhost:4000/notes/1
+
+# Обновить заметку
+curl -X PUT http://localhost:4000/notes/1 \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Обновлённая заметка","important":false}'
+
+# Удалить заметку
+curl -X DELETE http://localhost:4000/notes/1
+```
+
+HTTP-взаимодействие: сервис B → сервис A
+
+Базовый пример (B читает данные из A):
+
+```bash
+curl http://localhost:4000/proxy/tasks
+```
+
+Этот запрос обращается к сервису B, который внутри контейнера делает HTTP-запрос к сервису A (`GET /tasks`) и возвращает объединённый ответ.
+
+##### Сценарий 1: создание задачи в A и чтение её через B
+
+1. **Создаём новую задачу напрямую в сервисе A**:
+
+```bash
+curl -X POST http://localhost:3000/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Задача, созданная для проверки взаимодействия","completed":false}'
+```
+
+2. **Проверяем, что задача появилась в A напрямую**:
+
+```bash
+curl http://localhost:3000/tasks
+```
+
+3. **Читаем те же данные через сервис B (проксирование)**:
+
+```bash
+curl http://localhost:4000/proxy/tasks
+```
+
+В отчёте можно показать, что в ответе от `/proxy/tasks` присутствует только что созданная задача — это демонстрация обмена данными по HTTP между двумя сервисами.
+
+Альтернатива: **создать задачу в A через сервис B**, используя `POST /proxy/tasks`:
+
+```bash
+curl -X POST http://localhost:4000/proxy/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Задача, созданная через сервис B","completed":false}'
+```
+
+В этом случае клиент отправляет запрос только в сервис B, а тот внутри делает `POST /tasks` в сервис A.
+
+##### Сценарий 2: обновление задачи в A и повторное чтение через B
+
+1. **Обновляем задачу в A (пример: id = 2)**:
+
+```bash
+curl -X PUT http://localhost:3000/tasks/2 \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Обновлённая задача из сценария 2","completed":true}'
+```
+
+2. **Проверяем обновление в A**:
+
+```bash
+curl http://localhost:3000/tasks/2
+```
+
+3. **Снова читаем список задач через B**:
+
+```bash
+curl http://localhost:4000/proxy/tasks
+```
+
+В ответе должны быть новые значения `title` и `completed` — это пример того, что сервис B получает актуальные данные из сервиса A по протоколу HTTP.
+
+##### Сценарий 3: удаление задачи в A и проверка через B
+
+1. **Удаляем задачу в A (пример: id = 2)**:
+
+```bash
+curl -X DELETE http://localhost:3000/tasks/2
+```
+
+2. **Проверяем текущее состояние задач в A**:
+
+```bash
+curl http://localhost:3000/tasks
+```
+
+3. **Проверяем состояние данных через B**:
+
+```bash
+curl http://localhost:4000/proxy/tasks
+```
+
+</details>

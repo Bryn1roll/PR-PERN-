@@ -17,7 +17,7 @@ app.get('/info', (req, res) => {
     project: 'PERN-labs',
     service: 'A',
     topic: 'Контейнеризация, Docker, REST, CRUD',
-    author: 'Укажите своё ФИО в коде/отчёте',
+    author: 'Golban Vladislav',
   });
 });
 
