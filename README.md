@@ -207,3 +207,28 @@ curl http://localhost:4000/proxy/tasks
 ```
 
 </details>
+
+---
+
+### Интеграция Postman-коллекции
+
+В репозитории есть готовая коллекция Postman: `pern-api-test.postman_collection.json`.
+
+<details>
+<summary><strong>Показать шаги по импорту Postman-коллекции</strong></summary>
+
+1. **Откройте Postman**.
+2. В левом верхнем углу нажмите **"Import"**.
+3. Перейдите на вкладку **"File"**.
+4. Нажмите **"Upload Files"** и выберите файл:
+
+   - `pern-api-test.postman_collection.json` из корня проекта.
+
+5. Нажмите **"Import"**.
+6. В разделе **"Collections"** появится новая коллекция (например, `PERN API Test`), содержащая:
+   - запросы к сервису A (`/tasks`, `/tasks/:id`, `POST/PUT/DELETE /tasks`),
+   - запросы к сервису B (`/notes`, `/notes/:id`, `POST/PUT/DELETE /notes`),
+   - запросы для HTTP-взаимодействия (`/proxy/tasks`, `POST /proxy/tasks`).
+
+
+</details>

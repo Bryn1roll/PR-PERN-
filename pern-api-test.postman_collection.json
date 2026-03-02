@@ -1,0 +1,282 @@
+{
+  "info": {
+    "name": "PR-PERN Docker Services API Test",
+    "description": "Коллекция для тестирования сервисов A (:3000) и B (:4000) с проксированием. Базовые проверки + CRUD + сценарии взаимодействия.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "serviceA_base",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "serviceB_base",
+      "value": "http://localhost:4000"
+    },
+    {
+      "key": "task_id",
+      "value": "1"
+    },
+    {
+      "key": "note_id",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Сервис A (Tasks)",
+      "item": [
+        {
+          "name": "Базовая проверка A",
+          "item": [
+            {
+              "name": "GET /",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{serviceA_base}}/",
+                  "host": ["{{serviceA_base}}"],
+                  "path": [""]
+                }
+              }
+            },
+            {
+              "name": "GET /info",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{serviceA_base}}/info",
+                  "host": ["{{serviceA_base}}"],
+                  "path": ["info"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "CRUD Tasks",
+          "item": [
+            {
+              "name": "GET /tasks (все)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{serviceA_base}}/tasks",
+                  "host": ["{{serviceA_base}}"],
+                  "path": ["tasks"]
+                }
+              }
+            },
+            {
+              "name": "POST /tasks (создать)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Сделать отчёт по лабораторной\",\n  \"completed\": false\n}"
+                },
+                "url": {
+                  "raw": "{{serviceA_base}}/tasks",
+                  "host": ["{{serviceA_base}}"],
+                  "path": ["tasks"]
+                }
+              }
+            },
+            {
+              "name": "GET /tasks/:id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{serviceA_base}}/tasks/{{task_id}}",
+                  "host": ["{{serviceA_base}}"],
+                  "path": ["tasks", "{{task_id}}"]
+                }
+              }
+            },
+            {
+              "name": "PUT /tasks/:id (обновить)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Обновлённая задача\",\n  \"completed\": true\n}"
+                },
+                "url": {
+                  "raw": "{{serviceA_base}}/tasks/{{task_id}}",
+                  "host": ["{{serviceA_base}}"],
+                  "path": ["tasks", "{{task_id}}"]
+                }
+              }
+            },
+            {
+              "name": "DELETE /tasks/:id",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{serviceA_base}}/tasks/{{task_id}}",
+                  "host": ["{{serviceA_base}}"],
+                  "path": ["tasks", "{{task_id}}"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Сервис B (Notes)",
+      "item": [
+        {
+          "name": "Базовая проверка B",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{serviceB_base}}/",
+              "host": ["{{serviceB_base}}"],
+              "path": [""]
+            }
+          }
+        },
+        {
+          "name": "CRUD Notes",
+          "item": [
+            {
+              "name": "GET /notes (все)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{serviceB_base}}/notes",
+                  "host": ["{{serviceB_base}}"],
+                  "path": ["notes"]
+                }
+              }
+            },
+            {
+              "name": "POST /notes (создать)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"text\": \"Заметка для проверки REST\",\n  \"important\": true\n}"
+                },
+                "url": {
+                  "raw": "{{serviceB_base}}/notes",
+                  "host": ["{{serviceB_base}}"],
+                  "path": ["notes"]
+                }
+              }
+            },
+            {
+              "name": "GET /notes/:id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{serviceB_base}}/notes/{{note_id}}",
+                  "host": ["{{serviceB_base}}"],
+                  "path": ["notes", "{{note_id}}"]
+                }
+              }
+            },
+            {
+              "name": "PUT /notes/:id (обновить)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"text\": \"Обновлённая заметка\",\n  \"important\": false\n}"
+                },
+                "url": {
+                  "raw": "{{serviceB_base}}/notes/{{note_id}}",
+                  "host": ["{{serviceB_base}}"],
+                  "path": ["notes", "{{note_id}}"]
+                }
+              }
+            },
+            {
+              "name": "DELETE /notes/:id",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{serviceB_base}}/notes/{{note_id}}",
+                  "host": ["{{serviceB_base}}"],
+                  "path": ["notes", "{{note_id}}"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Взаимодействие B → A",
+      "item": [
+        {
+          "name": "GET /proxy/tasks (через B)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{serviceB_base}}/proxy/tasks",
+              "host": ["{{serviceB_base}}"],
+              "path": ["proxy", "tasks"]
+            }
+          }
+        },
+        {
+          "name": "Сценарий 1: POST /proxy/tasks (через B)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Задача, созданная через сервис B\",\n  \"completed\": false\n}"
+            },
+            "url": {
+              "raw": "{{serviceB_base}}/proxy/tasks",
+              "host": ["{{serviceB_base}}"],
+              "path": ["proxy", "tasks"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
