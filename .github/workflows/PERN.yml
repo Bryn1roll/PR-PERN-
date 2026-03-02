@@ -1,0 +1,50 @@
+name: PR-labs CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Build Docker images (service A & B)
+        run: docker compose build
+
+      - name: Run services with Docker Compose
+        run: docker compose up -d
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for service A (3000) and service B (4000)..."
+          for i in {1..20}; do
+            if curl -sSf http://localhost:3000/ >/dev/null && curl -sSf http://localhost:4000/ >/dev/null; then
+              echo "Services are up"
+              exit 0
+            fi
+            echo "Try $i: services not ready yet, sleeping..."
+            sleep 3
+          done
+          echo "Services did not become ready in time"
+          exit 1
+
+      - name: Smoke test service A (tasks API)
+        run: |
+          curl -sSf http://localhost:3000/ || exit 1
+          curl -sSf http://localhost:3000/tasks || exit 1
+
+      - name: Smoke test service B (notes API + proxy)
+        run: |
+          curl -sSf http://localhost:4000/ || exit 1
+          curl -sSf http://localhost:4000/proxy/tasks || exit 1
+
+      - name: Stop services
+        if: always()
+        run: docker compose down
