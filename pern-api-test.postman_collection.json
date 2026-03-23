@@ -277,6 +277,56 @@
           }
         }
       ]
+    },
+    {
+      "name": "Почта (SMTP/IMAP/POP3)",
+      "item": [
+        {
+          "name": "POST /email/send (отправить задачу)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"taskId\": \"{{task_id}}\",\n  \"to\": \"to@localhost\"\n}"
+            },
+            "url": {
+              "raw": "{{serviceB_base}}/email/send",
+              "host": ["{{serviceB_base}}"],
+              "path": ["email", "send"]
+            }
+          }
+        },
+        {
+          "name": "GET /email/check-imap (count INBOX)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{serviceB_base}}/email/check-imap",
+              "host": ["{{serviceB_base}}"],
+              "path": ["email", "check-imap"]
+            }
+          }
+        },
+        {
+          "name": "GET /email/check-pop3 (count inbox)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{serviceB_base}}/email/check-pop3",
+              "host": ["{{serviceB_base}}"],
+              "path": ["email", "check-pop3"]
+            }
+          }
+        }
+      ]
     }
   ]
 }

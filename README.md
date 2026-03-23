@@ -1,7 +1,7 @@
 ## PERN-labs — REST API в Docker
 
-- **Сервис A**: CRUD по ресурсу `tasks` (in-memory), базовая информация о проекте.
-- **Сервис B**: CRUD по ресурсу `notes` (in-memory) и HTTP-взаимодействие с сервисом A через endpoint `/proxy/tasks`.
+- **Сервис A**: CRUD по ресурсу `tasks` в PostgreSQL, базовая информация о проекте.
+- **Сервис B**: CRUD по ресурсу `notes` (in-memory), проксирование данных и отправка/проверка email (SMTP/IMAP/POP3) через GreenMail.
 
 ---
 
@@ -20,7 +20,13 @@
 - `backend/service-b` — сервис B (notes API + HTTP-запросы к A)
   - `src/index.js` — код сервиса.
   - `Dockerfile` — образ для сервиса B.
-- `docker-compose.yml` — поднимает оба сервиса в одной сети Docker.
+- `db/` — PostgreSQL контейнер и инициализация схемы (`init.sql`).
+- `frontend/` — UI ToDo List (React + Router).
+- `docker-compose.yml` — поднимает всё в одной сети Docker:
+  - `service-a`, `service-b`,
+  - `db` (PostgreSQL),
+  - `greenmail` (SMTP/IMAP/POP3),
+  - `ui` (фронтенд).
 
 ---
 
@@ -39,6 +45,7 @@ docker compose up --build
 
 - Сервис A доступен на `http://localhost:3000`
 - Сервис B доступен на `http://localhost:4000`
+- UI доступен на `http://localhost:5173`
 
 Остановить:
 
@@ -208,6 +215,31 @@ curl http://localhost:4000/proxy/tasks
 
 </details>
 
+<details>
+<summary><strong>Показать curl-запросы для отправки и проверки email</strong></summary>
+
+Отправка письма (SMTP) через сервис B:
+
+```bash
+curl -X POST http://localhost:4000/email/send \
+  -H "Content-Type: application/json" \
+  -d '{"taskId":1,"to":"to@localhost"}'
+```
+
+Проверка входящей почты через IMAP (количество писем в INBOX):
+
+```bash
+curl http://localhost:4000/email/check-imap
+```
+
+Проверка входящей почты через POP3 (количество писем):
+
+```bash
+curl http://localhost:4000/email/check-pop3
+```
+
+</details>
+
 ---
 
 ### Интеграция Postman-коллекции
@@ -228,7 +260,8 @@ curl http://localhost:4000/proxy/tasks
 6. В разделе **"Collections"** появится новая коллекция (например, `PERN API Test`), содержащая:
    - запросы к сервису A (`/tasks`, `/tasks/:id`, `POST/PUT/DELETE /tasks`),
    - запросы к сервису B (`/notes`, `/notes/:id`, `POST/PUT/DELETE /notes`),
-   - запросы для HTTP-взаимодействия (`/proxy/tasks`, `POST /proxy/tasks`).
+  - запросы для HTTP-взаимодействия (`/proxy/tasks`, `POST /proxy/tasks`),
+  - запросы для email (`/email/send`, `/email/check-imap`, `/email/check-pop3`).
 
 
 </details>
