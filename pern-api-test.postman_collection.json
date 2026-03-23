@@ -1,9 +1,164 @@
 {
   "info": {
-    "name": "PR-PERN Docker Services API Test",
-    "description": "Коллекция для тестирования сервисов A (:3000) и B (:4000) с проксированием. Базовые проверки + CRUD + сценарии взаимодействия.",
+    "name": "PERN-labs API",
+    "description": "Минимальный набор запросов для проверки ЛР1–ЛР4: CRUD задач (сервис A), CRUD заметок (сервис B), межсервисное взаимодействие B→A, почта SMTP/IMAP/POP3.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    { "key": "serviceA_base", "value": "http://localhost:3000" },
+    { "key": "serviceB_base", "value": "http://localhost:4000" },
+    { "key": "task_id",       "value": "1" },
+    { "key": "note_id",       "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "ЛР3 — CRUD Tasks (сервис A)",
+      "item": [
+        {
+          "name": "GET /tasks",
+          "request": {
+            "method": "GET", "header": [],
+            "url": { "raw": "{{serviceA_base}}/tasks", "host": ["{{serviceA_base}}"], "path": ["tasks"] }
+          }
+        },
+        {
+          "name": "POST /tasks",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Новая задача\",\n  \"completed\": false\n}" },
+            "url": { "raw": "{{serviceA_base}}/tasks", "host": ["{{serviceA_base}}"], "path": ["tasks"] }
+          }
+        },
+        {
+          "name": "GET /tasks/:id",
+          "request": {
+            "method": "GET", "header": [],
+            "url": { "raw": "{{serviceA_base}}/tasks/{{task_id}}", "host": ["{{serviceA_base}}"], "path": ["tasks", "{{task_id}}"] }
+          }
+        },
+        {
+          "name": "PUT /tasks/:id",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Обновлённая задача\",\n  \"completed\": true\n}" },
+            "url": { "raw": "{{serviceA_base}}/tasks/{{task_id}}", "host": ["{{serviceA_base}}"], "path": ["tasks", "{{task_id}}"] }
+          }
+        },
+        {
+          "name": "DELETE /tasks/:id",
+          "request": {
+            "method": "DELETE", "header": [],
+            "url": { "raw": "{{serviceA_base}}/tasks/{{task_id}}", "host": ["{{serviceA_base}}"], "path": ["tasks", "{{task_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ЛР2 — CRUD Notes (сервис B)",
+      "item": [
+        {
+          "name": "GET /notes",
+          "request": {
+            "method": "GET", "header": [],
+            "url": { "raw": "{{serviceB_base}}/notes", "host": ["{{serviceB_base}}"], "path": ["notes"] }
+          }
+        },
+        {
+          "name": "POST /notes",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"text\": \"Заметка для проверки\",\n  \"important\": true\n}" },
+            "url": { "raw": "{{serviceB_base}}/notes", "host": ["{{serviceB_base}}"], "path": ["notes"] }
+          }
+        },
+        {
+          "name": "PUT /notes/:id",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"text\": \"Обновлённая заметка\",\n  \"important\": false\n}" },
+            "url": { "raw": "{{serviceB_base}}/notes/{{note_id}}", "host": ["{{serviceB_base}}"], "path": ["notes", "{{note_id}}"] }
+          }
+        },
+        {
+          "name": "DELETE /notes/:id",
+          "request": {
+            "method": "DELETE", "header": [],
+            "url": { "raw": "{{serviceB_base}}/notes/{{note_id}}", "host": ["{{serviceB_base}}"], "path": ["notes", "{{note_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ЛР2 — Взаимодействие B → A",
+      "item": [
+        {
+          "name": "GET /proxy/tasks",
+          "request": {
+            "method": "GET", "header": [],
+            "url": { "raw": "{{serviceB_base}}/proxy/tasks", "host": ["{{serviceB_base}}"], "path": ["proxy", "tasks"] }
+          }
+        },
+        {
+          "name": "POST /proxy/tasks",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Задача через сервис B\",\n  \"completed\": false\n}" },
+            "url": { "raw": "{{serviceB_base}}/proxy/tasks", "host": ["{{serviceB_base}}"], "path": ["proxy", "tasks"] }
+          }
+        },
+        {
+          "name": "PUT /proxy/tasks/:id",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Обновлено через сервис B\",\n  \"completed\": true\n}" },
+            "url": { "raw": "{{serviceB_base}}/proxy/tasks/{{task_id}}", "host": ["{{serviceB_base}}"], "path": ["proxy", "tasks", "{{task_id}}"] }
+          }
+        },
+        {
+          "name": "DELETE /proxy/tasks/:id",
+          "request": {
+            "method": "DELETE", "header": [],
+            "url": { "raw": "{{serviceB_base}}/proxy/tasks/{{task_id}}", "host": ["{{serviceB_base}}"], "path": ["proxy", "tasks", "{{task_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ЛР4 — Почта (SMTP / IMAP / POP3)",
+      "item": [
+        {
+          "name": "POST /email/send (SMTP)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"taskId\": \"{{task_id}}\",\n  \"to\": \"to@localhost\"\n}" },
+            "url": { "raw": "{{serviceB_base}}/email/send", "host": ["{{serviceB_base}}"], "path": ["email", "send"] }
+          }
+        },
+        {
+          "name": "GET /email/check-imap (IMAP)",
+          "request": {
+            "method": "GET", "header": [],
+            "url": { "raw": "{{serviceB_base}}/email/check-imap", "host": ["{{serviceB_base}}"], "path": ["email", "check-imap"] }
+          }
+        },
+        {
+          "name": "GET /email/check-pop3 (POP3)",
+          "request": {
+            "method": "GET", "header": [],
+            "url": { "raw": "{{serviceB_base}}/email/check-pop3", "host": ["{{serviceB_base}}"], "path": ["email", "check-pop3"] }
+          }
+        }
+      ]
+    }
+  ]
+}
   "variable": [
     {
       "key": "serviceA_base",
@@ -256,7 +411,7 @@
           }
         },
         {
-          "name": "Сценарий 1: POST /proxy/tasks (через B)",
+          "name": "POST /proxy/tasks (через B)",
           "request": {
             "method": "POST",
             "header": [
@@ -273,6 +428,39 @@
               "raw": "{{serviceB_base}}/proxy/tasks",
               "host": ["{{serviceB_base}}"],
               "path": ["proxy", "tasks"]
+            }
+          }
+        },
+        {
+          "name": "PUT /proxy/tasks/:id (через B)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Обновлено через сервис B\",\n  \"completed\": true\n}"
+            },
+            "url": {
+              "raw": "{{serviceB_base}}/proxy/tasks/{{task_id}}",
+              "host": ["{{serviceB_base}}"],
+              "path": ["proxy", "tasks", "{{task_id}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /proxy/tasks/:id (через B)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{serviceB_base}}/proxy/tasks/{{task_id}}",
+              "host": ["{{serviceB_base}}"],
+              "path": ["proxy", "tasks", "{{task_id}}"]
             }
           }
         }
