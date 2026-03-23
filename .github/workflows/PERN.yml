@@ -81,10 +81,16 @@ jobs:
 
       - name: Smoke test — email (SMTP отправка + IMAP/POP3 проверка)
         run: |
-          # Используем задачу с id=1 (создана при init)
+          # Создаём задачу специально для email-теста
+          EMAIL_TASK_ID=$(curl -sSf -X POST http://localhost:3000/tasks \
+            -H "Content-Type: application/json" \
+            -d '{"title":"CI email task","completed":false}' | grep -o '"id":[0-9]*' | grep -o '[0-9]*')
+          echo "Email task id=$EMAIL_TASK_ID"
+
+          # SMTP: отправляем письмо с данными задачи
           curl -sSf -X POST http://localhost:4000/email/send \
             -H "Content-Type: application/json" \
-            -d '{"taskId":1,"to":"to@localhost"}'
+            -d "{\"taskId\":$EMAIL_TASK_ID,\"to\":\"to@localhost\"}"
 
           # IMAP: убеждаемся что count > 0
           IMAP_COUNT=$(curl -sSf http://localhost:4000/email/check-imap | grep -o '"count":[0-9]*' | grep -o '[0-9]*')
