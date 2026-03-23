@@ -325,6 +325,18 @@
               "path": ["email", "check-pop3"]
             }
           }
+        },
+        {
+          "name": "GET /email/latest-imap (latest subject/from)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{serviceB_base}}/email/latest-imap",
+              "host": ["{{serviceB_base}}"],
+              "path": ["email", "latest-imap"]
+            }
+          }
         }
       ]
     }

@@ -71,7 +71,7 @@ app.post('/notes', (req, res) => {
   if (!text) {
     return res.status(400).json({ error: 'Field "text" is required' });
   }
-  const note = { id: nextNoteId += 1, text, important: Boolean(important) };
+  const note = { id: nextNoteId++, text, important: Boolean(important) };
   notes.push(note);
   return res.status(201).json(note);
 });
@@ -140,6 +140,40 @@ app.post('/proxy/tasks', async (req, res) => {
     const status = error.response?.status || 500;
     return res.status(status).json({
       error: 'Failed to create task in service A via service B',
+      details: error.message,
+    });
+  }
+});
+
+// PUT /proxy/tasks/:id — обновляет задачу в сервисе A через сервис B
+app.put('/proxy/tasks/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const response = await axios.put(
+      `${SERVICE_A_URL}/tasks/${id}`,
+      req.body,
+      { headers: { 'Content-Type': 'application/json' } },
+    );
+    return res.status(response.status).json({ source: 'service-a', updated: response.data });
+  } catch (error) {
+    const status = error.response?.status || 500;
+    return res.status(status).json({
+      error: 'Failed to update task in service A via service B',
+      details: error.message,
+    });
+  }
+});
+
+// DELETE /proxy/tasks/:id — удаляет задачу в сервисе A через сервис B
+app.delete('/proxy/tasks/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const response = await axios.delete(`${SERVICE_A_URL}/tasks/${id}`);
+    return res.status(response.status).json({ source: 'service-a', deleted: response.data });
+  } catch (error) {
+    const status = error.response?.status || 500;
+    return res.status(status).json({
+      error: 'Failed to delete task in service A via service B',
       details: error.message,
     });
   }
@@ -225,6 +259,64 @@ app.get('/email/check-imap', async (req, res) => {
   }
 });
 
+// ЛР4: получить данные последнего письма в INBOX (IMAP)
+// Без необходимости открывать GreenMail UI: возвращаем subject/from и count.
+app.get('/email/latest-imap', async (req, res) => {
+  try {
+    requireMailConfig();
+
+    const client = new ImapFlow({
+      host: MAIL_HOST,
+      port: MAIL_IMAP_PORT,
+      secure: false,
+      auth: {
+        user: MAIL_USER,
+        pass: MAIL_PASS,
+      },
+    });
+
+    await client.connect();
+    const lock = await client.getMailboxLock('INBOX');
+    try {
+      const uids = await client.search({ all: true }, { uid: true });
+      const count = uids.length;
+
+      if (!count) {
+        return res.json({ mailbox: 'INBOX', count, latest: null });
+      }
+
+      const latestUid = uids[uids.length - 1];
+      const fetchIter = client.fetch(latestUid, {
+        uid: true,
+        envelope: true,
+      });
+
+      const message = await fetchIter.next();
+      const env = message.value?.envelope;
+      const subject = env?.subject || null;
+      const from = env?.from?.[0]?.address || null;
+
+      return res.json({
+        mailbox: 'INBOX',
+        count,
+        latest: {
+          uid: latestUid,
+          subject,
+          from,
+        },
+      });
+    } finally {
+      lock.release();
+      await client.logout();
+    }
+  } catch (error) {
+    return res.status(500).json({
+      error: 'Failed to fetch latest IMAP message',
+      details: error.message,
+    });
+  }
+});
+
 // ЛР4: проверка входящей почты через POP3
 app.get('/email/check-pop3', async (req, res) => {
   try {
@@ -239,10 +331,6 @@ app.get('/email/check-pop3', async (req, res) => {
     });
 
     await pop3.connect();
-    // В некоторых реализациях POP3 логин/пароль нужно отправлять командами.
-    await pop3.command('USER', MAIL_USER);
-    await pop3.command('PASS', MAIL_PASS);
-
     const [statInfo] = await pop3.command('STAT');
     const count = Number(String(statInfo).split(' ')[0]);
 

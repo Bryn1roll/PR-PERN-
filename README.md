@@ -238,6 +238,12 @@ curl http://localhost:4000/email/check-imap
 curl http://localhost:4000/email/check-pop3
 ```
 
+Просмотр темы последнего письма в INBOX (IMAP):
+
+```bash
+curl http://localhost:4000/email/latest-imap
+```
+
 </details>
 
 ---
