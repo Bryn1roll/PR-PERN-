@@ -104,9 +104,11 @@ jobs:
 
       - name: Smoke test — WebSocket (real-time events)
         run: |
-          # Проверяем что WS-соединение устанавливается и приходит сообщение при мутации задачи
+          # Устанавливаем ws во временную директорию
+          mkdir -p /tmp/ws-test && cd /tmp/ws-test && npm install ws --silent
+
           node - <<'EOF'
-          const WebSocket = require('ws');
+          const WebSocket = require('/tmp/ws-test/node_modules/ws');
           const http = require('http');
 
           const ws = new WebSocket('ws://localhost:3000');
@@ -115,7 +117,6 @@ jobs:
 
           ws.on('open', () => {
             console.log('[WS] connected');
-            // Создаём задачу через REST — ожидаем broadcast task:created
             const body = JSON.stringify({ title: 'WS smoke task', completed: false });
             const req = http.request(
               { hostname: 'localhost', port: 3000, path: '/tasks', method: 'POST',
