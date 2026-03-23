@@ -102,6 +102,46 @@ jobs:
           echo "POP3 count=$POP3_COUNT"
           [ "$POP3_COUNT" -gt 0 ] || (echo "POP3: no messages found" && exit 1)
 
+      - name: Smoke test — WebSocket (real-time events)
+        run: |
+          # Проверяем что WS-соединение устанавливается и приходит сообщение при мутации задачи
+          node - <<'EOF'
+          const WebSocket = require('ws');
+          const http = require('http');
+
+          const ws = new WebSocket('ws://localhost:3000');
+
+          ws.on('error', (e) => { console.error('WS error:', e.message); process.exit(1); });
+
+          ws.on('open', () => {
+            console.log('[WS] connected');
+            // Создаём задачу через REST — ожидаем broadcast task:created
+            const body = JSON.stringify({ title: 'WS smoke task', completed: false });
+            const req = http.request(
+              { hostname: 'localhost', port: 3000, path: '/tasks', method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } },
+              (res) => { res.resume(); }
+            );
+            req.write(body);
+            req.end();
+          });
+
+          ws.on('message', (raw) => {
+            const { event, payload } = JSON.parse(raw);
+            console.log('[WS] received:', event, JSON.stringify(payload));
+            if (event === 'task:created') {
+              console.log('[WS] broadcast OK');
+              ws.close();
+              process.exit(0);
+            }
+          });
+
+          setTimeout(() => {
+            console.error('[WS] timeout — no broadcast received');
+            process.exit(1);
+          }, 10000);
+          EOF
+
       - name: Stop services
         if: always()
         run: docker compose down

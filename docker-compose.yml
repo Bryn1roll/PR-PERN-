@@ -86,6 +86,8 @@ services:
     container_name: pern-labs-ui
     ports:
       - "5173:80"
+    environment:
+      - VITE_SERVICE_A_WS=ws://localhost:3000
     depends_on:
       service-a:
         condition: service_healthy

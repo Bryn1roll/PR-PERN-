@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { emailApi, tasksApi } from '../lib/api.js';
+import { useTasksSocket } from '../lib/useTasksSocket.js';
 
 export default function TasksList() {
   const navigate = useNavigate();
@@ -30,6 +31,19 @@ export default function TasksList() {
   useEffect(() => {
     loadTasks();
   }, []);
+
+  // Real-time обновления через WebSocket
+  const handleWsMessage = useCallback(({ event, payload }) => {
+    if (event === 'task:created') {
+      setTasks((prev) => [...prev, payload]);
+    } else if (event === 'task:updated') {
+      setTasks((prev) => prev.map((t) => (t.id === payload.id ? payload : t)));
+    } else if (event === 'task:deleted') {
+      setTasks((prev) => prev.filter((t) => t.id !== payload.id));
+    }
+  }, []);
+
+  useTasksSocket(handleWsMessage);
 
   async function addTask(e) {
     e.preventDefault();

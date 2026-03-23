@@ -1,10 +1,27 @@
+const http = require('http');
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
+const { WebSocketServer } = require('ws');
 
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
 const PORT = process.env.PORT || 3000;
 const DATABASE_URL = process.env.DATABASE_URL;
+
+// Рассылаем событие всем подключённым WS-клиентам
+function broadcast(event, payload) {
+  const msg = JSON.stringify({ event, payload });
+  wss.clients.forEach((client) => {
+    if (client.readyState === client.OPEN) client.send(msg);
+  });
+}
+
+wss.on('connection', (ws) => {
+  console.log('WS client connected, total:', wss.clients.size);
+  ws.on('close', () => console.log('WS client disconnected, total:', wss.clients.size));
+});
 
 // Для фронтенда (ui на :5173) разрешаем CORS
 app.use(
@@ -86,6 +103,7 @@ app.post('/tasks', async (req, res) => {
     'INSERT INTO tasks(title, completed) VALUES($1, $2) RETURNING id, title, completed',
     [title, Boolean(completed)],
   );
+  broadcast('task:created', rows[0]);
   return res.status(201).json(rows[0]);
 });
 
@@ -106,6 +124,7 @@ app.put('/tasks/:id', async (req, res) => {
   );
   const updated = rows[0];
   if (!updated) return res.status(404).json({ error: 'Task not found' });
+  broadcast('task:updated', updated);
   return res.json(updated);
 });
 
@@ -115,6 +134,7 @@ app.delete('/tasks/:id', async (req, res) => {
   const { rows } = await pool.query('DELETE FROM tasks WHERE id = $1 RETURNING id, title, completed', [id]);
   const deleted = rows[0];
   if (!deleted) return res.status(404).json({ error: 'Task not found' });
+  broadcast('task:deleted', deleted);
   return res.json(deleted);
 });
 
@@ -144,9 +164,9 @@ async function start() {
     process.exit(1);
   }
 
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     // eslint-disable-next-line no-console
-    console.log(`PERN-labs service A is running on port ${PORT}`);
+    console.log(`PERN-labs service A is running on port ${PORT} (HTTP + WebSocket)`);
   });
 }
 
