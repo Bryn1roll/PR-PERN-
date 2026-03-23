@@ -30,7 +30,7 @@
 
 ---
 
-### Запуск в Docker (рекомендуемый вариант для отчёта)
+### Запуск в Docker 
 
 Из корня проекта:
 
@@ -46,6 +46,7 @@ docker compose up --build
 - Сервис A доступен на `http://localhost:3000`
 - Сервис B доступен на `http://localhost:4000`
 - UI доступен на `http://localhost:5173`
+- Почта доступна на `http://localhost:8080/api/user/to@localhost/messages`
 
 Остановить:
 

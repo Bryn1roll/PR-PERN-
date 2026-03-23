@@ -331,6 +331,8 @@ app.get('/email/check-pop3', async (req, res) => {
     });
 
     await pop3.connect();
+    await pop3.command('USER', MAIL_USER);
+    await pop3.command('PASS', MAIL_PASS);
     const [statInfo] = await pop3.command('STAT');
     const count = Number(String(statInfo).split(' ')[0]);
 

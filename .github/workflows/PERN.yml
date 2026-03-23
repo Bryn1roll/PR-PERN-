@@ -15,35 +15,86 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Build Docker images (service A & B)
-        run: docker compose build
+      - name: Build and start all services
+        run: docker compose up -d --build --wait
 
-      - name: Run services with Docker Compose
-        run: docker compose up -d
-
-      - name: Wait for services to be ready
+      - name: Smoke test — сервис A, CRUD tasks
         run: |
-          echo "Waiting for service A (3000) and service B (4000)..."
-          for i in {1..20}; do
-            if curl -sSf http://localhost:3000/ >/dev/null && curl -sSf http://localhost:4000/ >/dev/null; then
-              echo "Services are up"
-              exit 0
-            fi
-            echo "Try $i: services not ready yet, sleeping..."
-            sleep 3
-          done
-          echo "Services did not become ready in time"
-          exit 1
+          # GET /tasks
+          curl -sSf http://localhost:3000/tasks
 
-      - name: Smoke test service A (tasks API)
-        run: |
-          curl -sSf http://localhost:3000/ || exit 1
-          curl -sSf http://localhost:3000/tasks || exit 1
+          # POST /tasks → сохраняем id созданной задачи
+          TASK_ID=$(curl -sSf -X POST http://localhost:3000/tasks \
+            -H "Content-Type: application/json" \
+            -d '{"title":"CI task","completed":false}' | grep -o '"id":[0-9]*' | grep -o '[0-9]*')
+          echo "Created task id=$TASK_ID"
 
-      - name: Smoke test service B (notes API + proxy)
+          # GET /tasks/:id
+          curl -sSf "http://localhost:3000/tasks/$TASK_ID"
+
+          # PUT /tasks/:id
+          curl -sSf -X PUT "http://localhost:3000/tasks/$TASK_ID" \
+            -H "Content-Type: application/json" \
+            -d '{"title":"CI task updated","completed":true}'
+
+          # DELETE /tasks/:id
+          curl -sSf -X DELETE "http://localhost:3000/tasks/$TASK_ID"
+
+      - name: Smoke test — сервис B, CRUD notes
         run: |
-          curl -sSf http://localhost:4000/ || exit 1
-          curl -sSf http://localhost:4000/proxy/tasks || exit 1
+          # GET /notes
+          curl -sSf http://localhost:4000/notes
+
+          # POST /notes → сохраняем id
+          NOTE_ID=$(curl -sSf -X POST http://localhost:4000/notes \
+            -H "Content-Type: application/json" \
+            -d '{"text":"CI note","important":false}' | grep -o '"id":[0-9]*' | grep -o '[0-9]*')
+          echo "Created note id=$NOTE_ID"
+
+          # PUT /notes/:id
+          curl -sSf -X PUT "http://localhost:4000/notes/$NOTE_ID" \
+            -H "Content-Type: application/json" \
+            -d '{"text":"CI note updated","important":true}'
+
+          # DELETE /notes/:id
+          curl -sSf -X DELETE "http://localhost:4000/notes/$NOTE_ID"
+
+      - name: Smoke test — взаимодействие B → A (proxy)
+        run: |
+          # GET /proxy/tasks
+          curl -sSf http://localhost:4000/proxy/tasks
+
+          # POST /proxy/tasks → получаем id
+          TASK_ID=$(curl -sSf -X POST http://localhost:4000/proxy/tasks \
+            -H "Content-Type: application/json" \
+            -d '{"title":"CI proxy task","completed":false}' \
+            | grep -o '"id":[0-9]*' | grep -o '[0-9]*')
+          echo "Proxy created task id=$TASK_ID"
+
+          # PUT /proxy/tasks/:id
+          curl -sSf -X PUT "http://localhost:4000/proxy/tasks/$TASK_ID" \
+            -H "Content-Type: application/json" \
+            -d '{"title":"CI proxy task updated","completed":true}'
+
+          # DELETE /proxy/tasks/:id
+          curl -sSf -X DELETE "http://localhost:4000/proxy/tasks/$TASK_ID"
+
+      - name: Smoke test — email (SMTP отправка + IMAP/POP3 проверка)
+        run: |
+          # Используем задачу с id=1 (создана при init)
+          curl -sSf -X POST http://localhost:4000/email/send \
+            -H "Content-Type: application/json" \
+            -d '{"taskId":1,"to":"to@localhost"}'
+
+          # IMAP: убеждаемся что count > 0
+          IMAP_COUNT=$(curl -sSf http://localhost:4000/email/check-imap | grep -o '"count":[0-9]*' | grep -o '[0-9]*')
+          echo "IMAP count=$IMAP_COUNT"
+          [ "$IMAP_COUNT" -gt 0 ] || (echo "IMAP: no messages found" && exit 1)
+
+          # POP3: убеждаемся что count > 0
+          POP3_COUNT=$(curl -sSf http://localhost:4000/email/check-pop3 | grep -o '"count":[0-9]*' | grep -o '[0-9]*')
+          echo "POP3 count=$POP3_COUNT"
+          [ "$POP3_COUNT" -gt 0 ] || (echo "POP3: no messages found" && exit 1)
 
       - name: Stop services
         if: always()

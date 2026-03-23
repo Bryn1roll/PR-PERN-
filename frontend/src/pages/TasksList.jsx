@@ -49,6 +49,19 @@ export default function TasksList() {
     }
   }
 
+  async function toggleCompleted(task) {
+    setLoading(true);
+    setMessage('');
+    try {
+      await tasksApi.update(task.id, { title: task.title, completed: !task.completed });
+      await loadTasks();
+    } catch (e) {
+      setMessage(e.message || String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function deleteTask(id) {
     const ok = window.confirm(`Удалить задачу #${id}?`);
     if (!ok) return;
@@ -142,7 +155,17 @@ export default function TasksList() {
               <tr key={t.id}>
                 <td>{t.id}</td>
                 <td>{t.title}</td>
-                <td>{t.completed ? 'да' : 'нет'}</td>
+                <td>
+                  <label className="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={t.completed}
+                      onChange={() => toggleCompleted(t)}
+                      disabled={loading}
+                    />
+                    {t.completed ? 'Готово' : 'В работе'}
+                  </label>
+                </td>
                 <td className="actions">
                   <button type="button" onClick={() => navigate(`/tasks/${t.id}`)} disabled={loading}>
                     Детали/редактировать
